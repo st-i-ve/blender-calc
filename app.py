@@ -103,10 +103,10 @@ def calculate_frames():
         
         # Clear previous results
         result_text.delete(1.0, tk.END)
+        gpu_text.delete(1.0, tk.END)
         
-        # Calculate frames for each time value
-        total_all_frames = 0
-        results = []
+        # Calculate frames for each time value and track max as total
+        max_total_frames = 0
         
         for i, time_val in enumerate(time_values):
             if "." not in time_val:
@@ -125,14 +125,31 @@ def calculate_frames():
                 return
             
             total_frames = seconds * fps + frames
-            total_all_frames += total_frames
+            if total_frames > max_total_frames:
+                max_total_frames = total_frames
             
             # Add to results text
             result_text.insert(tk.END, f"• {time_val} = {total_frames} frames\n")
         
-        # Add total if multiple values
-        if len(time_values) > 1:
-            result_text.insert(tk.END, f"\nTotal: {total_all_frames} frames")
+        # Show total as the HIGHEST input, not sum
+        if len(time_values) >= 1:
+            result_text.insert(tk.END, f"\nTotal (max from inputs): {max_total_frames} frames")
+        
+        # Update GPU distribution panel
+        try:
+            gpu_count = int(gpu_var.get())
+        except Exception:
+            gpu_count = 6
+        
+        if gpu_count <= 0:
+            gpu_count = 6
+        
+        base = max_total_frames // gpu_count
+        remainder = max_total_frames % gpu_count
+        gpu_text.insert(tk.END, f"Total frames: {max_total_frames}\nGPUs: {gpu_count}\n\n")
+        for idx in range(1, gpu_count + 1):
+            assigned = base + (1 if idx <= remainder else 0)
+            gpu_text.insert(tk.END, f"GPU {idx}: {assigned} frames\n")
         
     except ValueError as e:
         result_text.delete(1.0, tk.END)
@@ -141,6 +158,7 @@ def calculate_frames():
 def clear_all():
     entry_time.delete(0, tk.END)
     result_text.delete(1.0, tk.END)
+    gpu_text.delete(1.0, tk.END)
     entry_time.focus()
 
 def paste_from_clipboard():
@@ -242,6 +260,33 @@ result_text = scrolledtext.ScrolledText(main_frame, height=12,
                                        font=('Consolas', 10),
                                        relief='flat', padx=10, pady=10)
 result_text.pack(fill=tk.BOTH, expand=True)
+
+# GPU Distribution Panel
+gpu_panel = tk.Frame(main_frame, bg=BG_COLOR)
+gpu_panel.pack(fill=tk.BOTH, expand=False, pady=(10, 0))
+
+gpu_title = tk.Label(gpu_panel, text="Render Distribution", 
+                     bg=BG_COLOR, fg=ACCENT_COLOR, font=('Segoe UI', 12, 'bold'))
+gpu_title.pack(anchor=tk.W, pady=(0, 5))
+
+gpu_controls = tk.Frame(gpu_panel, bg=BG_COLOR)
+gpu_controls.pack(fill=tk.X, pady=(0, 10))
+
+gpu_label = tk.Label(gpu_controls, text="GPUs:", 
+                     bg=BG_COLOR, fg=FG_COLOR, font=('Segoe UI', 10))
+gpu_label.pack(side=tk.LEFT)
+
+gpu_var = tk.StringVar(value="6")
+gpu_dropdown = ttk.Combobox(gpu_controls, textvariable=gpu_var,
+                            width=8, state="readonly", font=('Segoe UI', 10))
+gpu_dropdown['values'] = ("6", "7", "8", "9")
+gpu_dropdown.pack(side=tk.LEFT, padx=(10, 0))
+
+gpu_text = scrolledtext.ScrolledText(gpu_panel, height=8,
+                                     bg=TEXT_BG, fg=FG_COLOR,
+                                     font=('Consolas', 10),
+                                     relief='flat', padx=10, pady=10)
+gpu_text.pack(fill=tk.BOTH, expand=True)
 
 # Focus on input field when app starts
 entry_time.focus()
