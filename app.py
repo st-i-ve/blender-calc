@@ -11,6 +11,9 @@ BUTTON_BG = ACCENT_COLOR       # default button background
 BUTTON_HOVER = "#cc6200"      # darker orange on hover
 TEXT_BG = "#181818"           # dark text area
 
+# Keep track of last calculated total frames for GPU updates
+last_total_frames = 0
+
 # Rounded Button (pill shaped) using Canvas
 class RoundedButton(tk.Canvas):
     def __init__(self, parent, text, command=None,
@@ -135,21 +138,10 @@ def calculate_frames():
         if len(time_values) >= 1:
             result_text.insert(tk.END, f"\nTotal (max from inputs): {max_total_frames} frames")
         
-        # Update GPU distribution panel
-        try:
-            gpu_count = int(gpu_var.get())
-        except Exception:
-            gpu_count = 6
-        
-        if gpu_count <= 0:
-            gpu_count = 6
-        
-        base = max_total_frames // gpu_count
-        remainder = max_total_frames % gpu_count
-        gpu_text.insert(tk.END, f"Total frames: {max_total_frames}\nGPUs: {gpu_count}\n\n")
-        for idx in range(1, gpu_count + 1):
-            assigned = base + (1 if idx <= remainder else 0)
-            gpu_text.insert(tk.END, f"GPU {idx}: {assigned} frames\n")
+        # Store last total and update GPU distribution
+        global last_total_frames
+        last_total_frames = max_total_frames
+        update_gpu_distribution()
         
     except ValueError as e:
         result_text.delete(1.0, tk.END)
@@ -160,6 +152,30 @@ def clear_all():
     result_text.delete(1.0, tk.END)
     gpu_text.delete(1.0, tk.END)
     entry_time.focus()
+    global last_total_frames
+    last_total_frames = 0
+
+def update_gpu_distribution(*_args):
+    """Update the GPU distribution text using the last calculated total and current GPU count."""
+    gpu_text.delete(1.0, tk.END)
+    try:
+        gpu_count = int(gpu_var.get())
+    except Exception:
+        gpu_count = 6
+    if gpu_count <= 0:
+        gpu_count = 6
+    
+    total = last_total_frames
+    if total <= 0:
+        gpu_text.insert(tk.END, "Calculate frames to see distribution here.")
+        return
+    
+    base = total // gpu_count
+    remainder = total % gpu_count
+    gpu_text.insert(tk.END, f"Total frames: {total}\nGPUs: {gpu_count}\n\n")
+    for idx in range(1, gpu_count + 1):
+        assigned = base + (1 if idx <= remainder else 0)
+        gpu_text.insert(tk.END, f"GPU {idx}: {assigned} frames\n")
 
 def paste_from_clipboard():
     try:
@@ -259,7 +275,7 @@ result_text = scrolledtext.ScrolledText(main_frame, height=12,
                                        bg=TEXT_BG, fg=FG_COLOR,
                                        font=('Consolas', 10),
                                        relief='flat', padx=10, pady=10)
-result_text.pack(fill=tk.BOTH, expand=True)
+result_text.pack(fill=tk.BOTH, expand=False)
 
 # GPU Distribution Panel
 gpu_panel = tk.Frame(main_frame, bg=BG_COLOR)
@@ -281,6 +297,7 @@ gpu_dropdown = ttk.Combobox(gpu_controls, textvariable=gpu_var,
                             width=8, state="readonly", font=('Segoe UI', 10))
 gpu_dropdown['values'] = ("6", "7", "8", "9")
 gpu_dropdown.pack(side=tk.LEFT, padx=(10, 0))
+gpu_dropdown.bind("<<ComboboxSelected>>", update_gpu_distribution)
 
 gpu_text = scrolledtext.ScrolledText(gpu_panel, height=8,
                                      bg=TEXT_BG, fg=FG_COLOR,
