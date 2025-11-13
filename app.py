@@ -188,7 +188,7 @@ def paste_from_clipboard():
 # GUI Setup
 root = tk.Tk()
 root.title("Frame Calculator Pro")
-root.geometry("800x500")
+root.geometry("1000x500")
 root.configure(bg=BG_COLOR)
 
 # Set modern theme
