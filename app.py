@@ -1,20 +1,86 @@
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk, scrolledtext, font as tkfont
 
-# Modern color scheme
-BG_COLOR = "#2b2b2b"
-FG_COLOR = "#ffffff"
-ACCENT_COLOR = "#007acc"
-ENTRY_BG = "#3c3f41"
-BUTTON_BG = "#007acc"
-BUTTON_HOVER = "#005a9e"
-TEXT_BG = "#3c3f41"
+# Orange & Black color scheme
+BG_COLOR = "#121212"          # deep black
+FG_COLOR = "#ffffff"          # white text
+ACCENT_COLOR = "#ff7a00"      # primary orange
+ACCENT_COLOR_ALT = "#ff8f33"  # lighter orange shade
+ENTRY_BG = "#1f1f1f"          # dark entry background
+BUTTON_BG = ACCENT_COLOR       # default button background
+BUTTON_HOVER = "#cc6200"      # darker orange on hover
+TEXT_BG = "#181818"           # dark text area
 
-def on_enter_button(e):
-    e.widget['background'] = BUTTON_HOVER
+# Rounded Button (pill shaped) using Canvas
+class RoundedButton(tk.Canvas):
+    def __init__(self, parent, text, command=None,
+                 bg=BUTTON_BG, fg=FG_COLOR,
+                 hover_bg=BUTTON_HOVER,
+                 radius=18, padding=(16, 8),
+                 font=("Segoe UI", 10, "bold")):
+        super().__init__(parent, bg=parent["bg"], highlightthickness=0)
 
-def on_leave_button(e):
-    e.widget['background'] = BUTTON_BG
+        self.parent = parent
+        self.text = text
+        self.command = command
+        self.bg = bg
+        self.fg = fg
+        self.hover_bg = hover_bg
+        self.radius = radius
+        self.padding_x, self.padding_y = padding
+        self.tkfont = tkfont.Font(family=font[0], size=font[1], weight=(font[2] if len(font) > 2 else "normal"))
+
+        text_width = self.tkfont.measure(self.text)
+        text_height = self.tkfont.metrics('linespace')
+        width = text_width + self.padding_x * 2 + 2
+        height = text_height + self.padding_y * 2 + 2
+        self.configure(width=width, height=height, cursor="hand2")
+
+        # Draw the pill shape and text
+        self._draw_shape(self.bg)
+        self.create_text(width/2, height/2, text=self.text, fill=self.fg, font=self.tkfont, tags=("btn_text",))
+
+        # Bind interactions
+        self.bind("<Enter>", self._on_enter)
+        self.bind("<Leave>", self._on_leave)
+        self.bind("<Button-1>", self._on_press)
+        self.bind("<ButtonRelease-1>", self._on_release)
+
+    def _draw_shape(self, color):
+        self.delete("shape")
+        w = int(float(self["width"]))
+        h = int(float(self["height"]))
+        r = min(self.radius, h // 2)
+        x1, y1, x2, y2 = 1, 1, w - 1, h - 1
+
+        # Four corner arcs
+        self.create_arc(x1, y1, x1 + 2*r, y1 + 2*r, start=90, extent=90, style='pieslice', fill=color, outline=color, tags=("shape",))
+        self.create_arc(x2 - 2*r, y1, x2, y1 + 2*r, start=0, extent=90, style='pieslice', fill=color, outline=color, tags=("shape",))
+        self.create_arc(x1, y2 - 2*r, x1 + 2*r, y2, start=180, extent=90, style='pieslice', fill=color, outline=color, tags=("shape",))
+        self.create_arc(x2 - 2*r, y2 - 2*r, x2, y2, start=270, extent=90, style='pieslice', fill=color, outline=color, tags=("shape",))
+
+        # Center and side rectangles to complete the pill
+        self.create_rectangle(x1 + r, y1, x2 - r, y2, fill=color, outline=color, tags=("shape",))
+        self.create_rectangle(x1, y1 + r, x1 + r, y2 - r, fill=color, outline=color, tags=("shape",))
+        self.create_rectangle(x2 - r, y1 + r, x2, y2 - r, fill=color, outline=color, tags=("shape",))
+
+    def _on_enter(self, _):
+        self.itemconfig("shape", fill=self.hover_bg, outline=self.hover_bg)
+
+    def _on_leave(self, _):
+        self.itemconfig("shape", fill=self.bg, outline=self.bg)
+
+    def _on_press(self, _):
+        # Slightly darken on press
+        self.itemconfig("shape", fill=self.hover_bg, outline=self.hover_bg)
+
+    def _on_release(self, _):
+        self.itemconfig("shape", fill=self.bg, outline=self.bg)
+        if self.command:
+            try:
+                self.command()
+            except Exception:
+                pass
 
 def calculate_frames():
     try:
@@ -107,7 +173,7 @@ main_frame.pack(fill=tk.BOTH, expand=True)
 # Title
 title_label = tk.Label(main_frame, text="Frame Calculator", 
                       font=('Segoe UI', 16, 'bold'), 
-                      bg=BG_COLOR, fg=FG_COLOR)
+                      bg=BG_COLOR, fg=ACCENT_COLOR)
 title_label.pack(pady=(0, 20))
 
 # Input frame
@@ -126,7 +192,7 @@ entry_time.pack(fill=tk.X, pady=(5, 5))
 
 # Example label
 example_label = tk.Label(input_frame, text="Examples: 1.14, 2.24, 3.05", 
-                        bg=BG_COLOR, fg="#888888", font=('Segoe UI', 8))
+                        bg=BG_COLOR, fg="#ffb26b", font=('Segoe UI', 8))
 example_label.pack(anchor=tk.W)
 
 # FPS selection frame
@@ -148,28 +214,23 @@ fps_dropdown.pack(side=tk.LEFT, padx=(10, 0))
 button_frame = tk.Frame(main_frame, bg=BG_COLOR)
 button_frame.pack(fill=tk.X, pady=(0, 20))
 
-calc_button = tk.Button(button_frame, text="Calculate Frames", 
-                       command=calculate_frames, font=('Segoe UI', 10),
-                       bg=BUTTON_BG, fg=FG_COLOR, relief='flat', padx=20)
+calc_button = RoundedButton(button_frame, text="Calculate Frames",
+                           command=calculate_frames, font=('Segoe UI', 10, 'bold'),
+                           bg=BUTTON_BG, fg=FG_COLOR, hover_bg=BUTTON_HOVER,
+                           radius=20, padding=(18, 10))
 calc_button.pack(side=tk.LEFT, padx=(0, 10))
 
-clear_button = tk.Button(button_frame, text="Clear All", 
-                        command=clear_all, font=('Segoe UI', 10),
-                        bg="#555555", fg=FG_COLOR, relief='flat', padx=20)
-clear_button.pack(side=tk.LEFT)
+clear_button = RoundedButton(button_frame, text="Clear All",
+                            command=clear_all, font=('Segoe UI', 10, 'bold'),
+                            bg=ACCENT_COLOR_ALT, fg=FG_COLOR, hover_bg="#e07922",
+                            radius=20, padding=(18, 10))
+clear_button.pack(side=tk.LEFT, padx=(0, 10))
 
-paste_button = tk.Button(button_frame, text="Paste", 
-                        command=paste_from_clipboard, font=('Segoe UI', 10),
-                        bg="#555555", fg=FG_COLOR, relief='flat', padx=20)
+paste_button = RoundedButton(button_frame, text="Paste",
+                            command=paste_from_clipboard, font=('Segoe UI', 10, 'bold'),
+                            bg="#cc6200", fg=FG_COLOR, hover_bg="#b25800",
+                            radius=20, padding=(18, 10))
 paste_button.pack(side=tk.RIGHT)
-
-# Add hover effects
-calc_button.bind("<Enter>", on_enter_button)
-calc_button.bind("<Leave>", on_leave_button)
-clear_button.bind("<Enter>", on_enter_button)
-clear_button.bind("<Leave>", on_leave_button)
-paste_button.bind("<Enter>", on_enter_button)
-paste_button.bind("<Leave>", on_leave_button)
 
 # Results area
 results_label = tk.Label(main_frame, text="Results:", 
