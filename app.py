@@ -188,7 +188,7 @@ def paste_from_clipboard():
 # GUI Setup
 root = tk.Tk()
 root.title("Frame Calculator Pro")
-root.geometry("500x500")
+root.geometry("800x500")
 root.configure(bg=BG_COLOR)
 
 # Set modern theme
@@ -210,8 +210,22 @@ title_label = tk.Label(main_frame, text="Frame Calculator",
                       bg=BG_COLOR, fg=ACCENT_COLOR)
 title_label.pack(pady=(0, 20))
 
-# Input frame
-input_frame = tk.Frame(main_frame, bg=BG_COLOR)
+# Two-column content area
+content_frame = tk.Frame(main_frame, bg=BG_COLOR)
+content_frame.pack(fill=tk.BOTH, expand=True)
+
+left_panel = tk.Frame(content_frame, bg=BG_COLOR)
+left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+
+# Vertical divider
+divider = tk.Frame(content_frame, bg="#2a2a2a", width=2)
+divider.pack(side=tk.LEFT, fill=tk.Y)
+
+right_panel = tk.Frame(content_frame, bg=BG_COLOR)
+right_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
+
+# Input frame (left)
+input_frame = tk.Frame(left_panel, bg=BG_COLOR)
 input_frame.pack(fill=tk.X, pady=(0, 15))
 
 # Time input
@@ -229,8 +243,8 @@ example_label = tk.Label(input_frame, text="Examples: 1.14, 2.24, 3.05",
                         bg=BG_COLOR, fg="#ffb26b", font=('Segoe UI', 8))
 example_label.pack(anchor=tk.W)
 
-# FPS selection frame
-fps_frame = tk.Frame(main_frame, bg=BG_COLOR)
+# FPS selection frame (left)
+fps_frame = tk.Frame(left_panel, bg=BG_COLOR)
 fps_frame.pack(fill=tk.X, pady=(0, 20))
 
 fps_label = tk.Label(fps_frame, text="Frame Rate:", 
@@ -244,8 +258,8 @@ fps_dropdown = ttk.Combobox(fps_frame, textvariable=fps_var,
 fps_dropdown['values'] = ("24", "25", "30", "60", "120", "240")
 fps_dropdown.pack(side=tk.LEFT, padx=(10, 0))
 
-# Buttons frame
-button_frame = tk.Frame(main_frame, bg=BG_COLOR)
+# Buttons frame (left)
+button_frame = tk.Frame(left_panel, bg=BG_COLOR)
 button_frame.pack(fill=tk.X, pady=(0, 20))
 
 calc_button = RoundedButton(button_frame, text="Calculate Frames",
@@ -266,20 +280,20 @@ paste_button = RoundedButton(button_frame, text="Paste",
                             radius=20, padding=(18, 10))
 paste_button.pack(side=tk.RIGHT)
 
-# Results area
-results_label = tk.Label(main_frame, text="Results:", 
+# Results area (left)
+results_label = tk.Label(left_panel, text="Results:", 
                         bg=BG_COLOR, fg=FG_COLOR, font=('Segoe UI', 11, 'bold'))
 results_label.pack(anchor=tk.W, pady=(10, 5))
 
-result_text = scrolledtext.ScrolledText(main_frame, height=12, 
+result_text = scrolledtext.ScrolledText(left_panel, height=12, 
                                        bg=TEXT_BG, fg=FG_COLOR,
                                        font=('Consolas', 10),
                                        relief='flat', padx=10, pady=10)
-result_text.pack(fill=tk.BOTH, expand=False)
+result_text.pack(fill=tk.BOTH, expand=True)
 
-# GPU Distribution Panel
-gpu_panel = tk.Frame(main_frame, bg=BG_COLOR)
-gpu_panel.pack(fill=tk.BOTH, expand=False, pady=(10, 0))
+# GPU Distribution Panel (right)
+gpu_panel = tk.Frame(right_panel, bg=BG_COLOR)
+gpu_panel.pack(fill=tk.BOTH, expand=True, pady=(0, 0))
 
 gpu_title = tk.Label(gpu_panel, text="Render Distribution", 
                      bg=BG_COLOR, fg=ACCENT_COLOR, font=('Segoe UI', 12, 'bold'))
@@ -299,7 +313,7 @@ gpu_dropdown['values'] = ("6", "7", "8", "9")
 gpu_dropdown.pack(side=tk.LEFT, padx=(10, 0))
 gpu_dropdown.bind("<<ComboboxSelected>>", update_gpu_distribution)
 
-gpu_text = scrolledtext.ScrolledText(gpu_panel, height=8,
+gpu_text = scrolledtext.ScrolledText(gpu_panel, height=16,
                                      bg=TEXT_BG, fg=FG_COLOR,
                                      font=('Consolas', 10),
                                      relief='flat', padx=10, pady=10)
